@@ -1,5 +1,44 @@
+/* -*- C -*- */
+
+
+/* ================================================================ */
+/* ================================================================ */
+/* ================================================================ */
+/*              THE FOLLOWING IS FILLED WITH CMAKE                  */
+/* ================================================================ */
+/* ================================================================ */
+/* ================================================================ */
+
+
+#ifndef luaconf_cmake_h
+#define luaconf_cmake_h
+
+#cmakedefine LUA_USE_ULONGJMP 1
+#cmakedefine LUA_USE_POSIX_SIGNAL 1
+#cmakedefine LUA_USE_DLOPEN 1
+#cmakedefine LUA_USE_ISATTY 1
+#cmakedefine LUA_USE_MKSTEMP 1
+#cmakedefine LUA_USE_POPEN 1
+#cmakedefine LUA_USE_READLINE 1
+#cmakedefine LUA_USE_READLINE_EVENT_HOOK 1
+#cmakedefine LUA_USE_MODULE_AND_LIBRARY 1
+#cmakedefine LUA_BUILD_AS_DLL 1
+
+#endif
+
+
+
+/* ================================================================ */
+/* ================================================================ */
+/* ================================================================ */
+/*  THE FOLLOWING IS COPIED VERBATIM FROM LUA-5.1.3/SRC/LUACONF.H   */
+/* ================================================================ */
+/* ================================================================ */
+/* ================================================================ */
+
+
 /*
-** $Id: luaconf.h,v 1.82.1.7 2008/02/11 16:25:08 roberto Exp $
+** $Id: luaconf.h.in,v 1.4 2008-08-08 16:15:05 leonb Exp $
 ** Configuration file for Lua
 ** See Copyright Notice in lua.h
 */
@@ -440,10 +479,10 @@
 @* can use.
 ** CHANGE it if you need lots of (Lua) stack space for your C
 ** functions. This limit is arbitrary; its only purpose is to stop C
-** functions to consume unlimited stack space. (must be smaller than
-** -LUA_REGISTRYINDEX)
+** functions to consume unlimited stack space.
 */
-#define LUAI_MAXCSTACK	8000
+#define LUAI_MCS_AUX	((int)(INT_MAX / (4*sizeof(LUA_NUMBER))))
+#define LUAI_MAXCSTACK	(LUAI_MCS_AUX > SHRT_MAX ? SHRT_MAX : LUAI_MCS_AUX)
 
 
 
@@ -748,6 +787,8 @@ union luai_Cast { double l_d; long l_l; };
 
 #endif
 
+#endif  /* lconfig_h */
+
 
 
 /* =================================================================== */
@@ -759,5 +800,81 @@ union luai_Cast { double l_d; long l_l; };
 
 
 
+/* ================================================================ */
+/* ================================================================ */
+/* ================================================================ */
+/*              CUSTOM DEFINITIONS FOR TORCH                        */
+/* ================================================================ */
+/* ================================================================ */
+/* ================================================================ */
+
+
+#ifndef luaconf_cpp_h
+# define luaconf_cpp_h
+# ifdef __cplusplus
+#  define LUA_EXTERNC extern "C"
+# else
+#  define LUA_EXTERNC extern
+# endif
+# undef LUA_API
+# undef LUALIB_API
+# if defined(LUA_BUILD_AS_DLL) && !defined(liblua_STATIC)
+#  if defined(liblua_EXPORTS) || defined(liblua_shared_EXPORTS)
+#   define LUA_API    LUA_EXTERNC __declspec(dllexport)
+#   define LUALIB_API LUA_EXTERNC __declspec(dllexport)
+#  else
+#   define LUA_API    LUA_EXTERNC __declspec(dllimport)
+#   define LUALIB_API LUA_EXTERNC __declspec(dllimport)
+#  endif
+# else
+#  define LUA_API     LUA_EXTERNC
+#  define LUALIB_API  LUA_EXTERNC
+# endif
+#endif
+
+
+#ifndef luaconf_path_h
+# define luaconf_path_h
+# undef LUA_LDIR
+# undef LUA_CDIR
+# undef LUA_PATH_DEFAULT
+# undef LUA_CPATH_DEFAULT
+LUA_API const char *lua_path_default();
+LUA_API const char *lua_cpath_default();
+LUA_API const char *lua_executable_dir(const char *argv0);
+# define LUA_PATH_DEFAULT lua_path_default()
+# define LUA_CPATH_DEFAULT lua_cpath_default()
+# define HAVE_LUA_EXECUTABLE_DIR 1
+# define LUA_LDIR LUA_EXECDIR \
+    "/@Lua_INSTALL_BIN_RIDBUS@/@Lua_INSTALL_LUA_PATH_SUBDIR@/"
+# define LUA_CDIR LUA_EXECDIR \
+    "/@Lua_INSTALL_BIN_RIDBUS@/@Lua_INSTALL_LUA_CPATH_SUBDIR@/"
+# define LUA_PATH_DEFAULT_STATIC  \
+   "./?.lua;" \
+    LUA_LDIR"?.lua;" \
+    LUA_LDIR"?/init.lua;" \
+    LUA_CDIR"?.lua;" \
+    LUA_CDIR"?/init.lua"
+
+# if LUA_USE_MODULE_AND_LIBRARY
+#  define LUA_CPATH_DEFAULT_STATIC \
+    "./?@CMAKE_SHARED_MODULE_SUFFIX@;" \
+    "./?@CMAKE_SHARED_LIBRARY_SUFFIX@;" \
+    LUA_CDIR"?@CMAKE_SHARED_MODULE_SUFFIX@;" \
+    LUA_CDIR"?@CMAKE_SHARED_LIBRARY_SUFFIX@;" \
+    LUA_CDIR"loadall@CMAKE_SHARED_MODULE_SUFFIX@" \
+    LUA_CDIR"loadall@CMAKE_SHARED_LIBRARY_SUFFIX@"
+# elif defined(LUA_WIN)
+#  define LUA_CPATH_DEFAULT_STATIC \
+    "./?@CMAKE_SHARED_MODULE_SUFFIX@;" \
+    LUA_EXECDIR "/?@CMAKE_SHARED_MODULE_SUFFIX@;" \
+    LUA_CDIR"?@CMAKE_SHARED_MODULE_SUFFIX@;" \
+    LUA_CDIR"loadall@CMAKE_SHARED_MODULE_SUFFIX@"
+# else
+#  define LUA_CPATH_DEFAULT_STATIC \
+    "./?@CMAKE_SHARED_MODULE_SUFFIX@;" \
+    LUA_CDIR"?@CMAKE_SHARED_MODULE_SUFFIX@;" \
+    LUA_CDIR"loadall@CMAKE_SHARED_MODULE_SUFFIX@"
+# endif
 #endif
 
